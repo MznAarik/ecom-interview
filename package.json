@@ -1,0 +1,8 @@
+{
+	"private": true,
+	"scripts": {
+		"frontend": "cd frontend && bun run dev",
+		"backend": "cd backend && php artisan serve",
+		"dev": "npx concurrently \"npm run frontend\" \"npm run backend\""
+	}
+}
