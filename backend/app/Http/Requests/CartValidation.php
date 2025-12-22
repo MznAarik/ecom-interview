@@ -22,10 +22,11 @@ class CartValidation extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => 'required|integer|exists:users,id',
-            'status' => 'nullable|in:active,checked_out',
-            'product_id' => 'required|integer|exists:products,id',
-            'quantity' => 'required|integer|min:1',
+            // 'user_id' => 'required|integer|exists:users,id',
+            // 'status' => 'nullable|in:active,checked_out',
+            'items' => 'required|array',
+            'items.*.product_id' => 'required|integer|exists:products,id',
+            'items.*.quantity' => 'required|integer|min:1',
         ];
     }
 }

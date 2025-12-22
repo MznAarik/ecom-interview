@@ -6,14 +6,14 @@ use App\Http\Requests\CartValidation;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Product;
-use Gate;
+use \Illuminate\Support\Facades\Gate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class CartController extends Controller
 {
-    public function addToCart(Request $request)
+    public function addToCart(CartValidation $request)
     {
         try {
             $checkUser = Gate::denies('checkUser');
@@ -134,8 +134,9 @@ class CartController extends Controller
         }
     }
 
-    public function updateCartItem(Request $request, string $id)
+    public function updateCartItem(CartValidation $request, string $id)
     {
+        Gate::authorize('update', Cart::find($id));
         try {
             $response = DB::transaction(function () use ($request, $id) {
                 $userId = Auth::id();
@@ -194,7 +195,7 @@ class CartController extends Controller
                     'status' => 1,
                     'message' => 'Cart item updated successfully',
                     'data' => [
-                        'cart_item' => $cartItem,
+                        'cart_item' => $cart->items,
                         'total_price' => $totalPrice
                     ]
                 ], 200);
@@ -213,8 +214,9 @@ class CartController extends Controller
 
     }
 
-    public function removeCartItem(Request $request)
+    public function removeCartItem(Request $request, Cart $cart)
     {
+        Gate::authorize('delete', $cart);
         try {
             $userId = Auth::id();
             $cart = Cart::where('user_id', $userId)
@@ -293,7 +295,7 @@ class CartController extends Controller
                     'items' => $cart->items,
                 ]
             ], 200);
-            
+
         } catch (\Exception $e) {
             \Log::error('Error during checkout: ' . $e->getMessage());
 
@@ -303,5 +305,36 @@ class CartController extends Controller
             ], 500);
         }
     }
-    
+
+    public function viewCheckedOut(Request $request)
+    {
+        try {
+            $userId = Auth::id();
+            $carts = Cart::where('user_id', $userId)
+                ->where('status', 'checked_out')
+                ->with('items.product')
+                ->get();
+
+            if ($carts->isEmpty()) {
+                return response()->json([
+                    'status' => 1,
+                    'message' => 'No checked out carts found',
+                ], 200);
+            }
+
+            return response()->json([
+                'status' => 1,
+                'data' => ['carts' => $carts]
+            ], 200);
+
+        } catch (\Exception $e) {
+            \Log::error('Error viewing checked out carts: ' . $e->getMessage());
+
+            return response()->json([
+                'status' => 0,
+                'message' => 'Failed to retrieve checked out carts'
+            ], 500);
+        }
+    }
+
 }

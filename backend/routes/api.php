@@ -11,7 +11,7 @@ Route::post('/login', [AuthController::class, 'login'])->name('auth.login');
 Route::post('/logout', [AuthController::class, 'logout'])->name('auth.logout');
 
 
-Route::middleware(['auth:api, check.admin'])->prefix('/products')->group(function () {
+Route::middleware(['auth:api', 'check.admin'])->prefix('/products')->group(function () {
     Route::get('/', [ProductController::class, 'index']);
     Route::post('/', [ProductController::class, 'store']);
     Route::match(['put', 'patch'], '/{id}', [ProductController::class, 'update']);
@@ -20,11 +20,12 @@ Route::middleware(['auth:api, check.admin'])->prefix('/products')->group(functio
 });
 
 
-Route::middleware('auth:api')->group(function () {
-    Route::post('/cart/add', [CartController::class, 'addToCart']);
-    Route::get('/cart', [CartController::class, 'viewCart']);
-    Route::put('/cart/update/{id}', [CartController::class, 'updateCartItem']);
-    Route::delete('/cart/remove/{id}', [CartController::class, 'removeCartItem']);
+Route::middleware('auth:api')->prefix('/cart')->group(function () {
+    Route::post('/add', [CartController::class, 'addToCart']);
+    Route::get('/', [CartController::class, 'viewCart']);
+    Route::put('/update/{id}', [CartController::class, 'updateCartItem']);
+    Route::delete('/remove/{id}', [CartController::class, 'removeCartItem']);
 
-    Route::post('/cart/checkout', [CartController::class, 'checkout']);
+    Route::post('/checkout', [CartController::class, 'checkout']);
+    Route::get('/checkout', [CartController::class, 'viewCheckedOut']);
 });

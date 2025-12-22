@@ -16,7 +16,7 @@ class ProductController extends Controller
         try {
 
             $perPage = $request->input('per_page', 5);
-            $products = Product::where('deleted_at', null)->paginate($perPage);
+            $products = Product::whereNull('deleted_at')->paginate($perPage);
 
             return response()->json(['status' => 1, 'data' => ['products' => $products]]);
         } catch (\Exception $e) {
@@ -45,8 +45,14 @@ class ProductController extends Controller
                     'message' => 'Unauthorized to create product'
                 ], 403);
             }
-            $product = Product::create($request->all());
 
+            $product = Product::create($request->all());
+            
+            if ($request->has('image')) {
+                $imagePath = $request->file('image')->store('products', 'public');
+                $request->merge(['image' => $imagePath]);
+            }
+            
             return response()->json([
                 'status' => 1,
                 'message' => 'Product created successfully',
