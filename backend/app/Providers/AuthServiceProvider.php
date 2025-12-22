@@ -11,5 +11,9 @@ class AuthServiceProvider extends \Illuminate\Foundation\Support\Providers\AuthS
         Gate::define('checkAdmin', function ($user) {
             return $user->role === 'admin';
         });
+
+        Gate::define('checkUser', function ($user) {
+            return $user->role === 'user';
+        });
     }
 }
