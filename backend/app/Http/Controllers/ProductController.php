@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class ProductController extends Controller
 {
@@ -13,8 +15,10 @@ class ProductController extends Controller
     {
         try {
 
-            //checking auth user is admin done in route middleware            
-            return response()->json(['status' => 1, 'data' => ['user' => 'products']]);
+            $perPage = $request->input('per_page', 5);
+            $products = Product::where('deleted_at', null)->paginate($perPage);
+
+            return response()->json(['status' => 1, 'data' => ['products' => $products]]);
         } catch (\Exception $e) {
             \Log::error('Error fetching products: ' . $e->getMessage());
             return response()->json(['status' => 1, 'message' => 'Failed to fetch products']);
@@ -34,7 +38,28 @@ class ProductController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        try {
+            if (!Gate::allows('checkAdmin')) {
+                return response()->json([
+                    'status' => 0,
+                    'message' => 'Unauthorized to create product'
+                ], 403);
+            }
+            $product = Product::create($request->all());
+
+            return response()->json([
+                'status' => 1,
+                'message' => 'Product created successfully',
+                'data' => ['product' => $product]
+            ], 201);
+
+        } catch (\Exception $e) {
+            \Log::error('Error creating product: ' . $e->getMessage());
+            return response()->json([
+                'status' => 0,
+                'message' => 'Failed to create product'
+            ], 500);
+        }
     }
 
     /**
@@ -42,7 +67,18 @@ class ProductController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $product = Product::find($id);
+        if (!$product) {
+            return response()->json([
+                'status' => 0,
+                'message' => 'Product not found'
+            ], 404);
+        }
+        return response()->json([
+            'status' => 1,
+            'data' => ['product' => $product]
+        ]);
+
     }
 
     /**
@@ -58,7 +94,38 @@ class ProductController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        try {
+            if (!Gate::allows('checkAdmin')) {
+                return response()->json([
+                    'status' => 0,
+                    'message' => 'Unauthorized to update product'
+                ], 403);
+            }
+            // checking product
+            $product = Product::find($id);
+
+            if (!$product) {
+                return response()->json([
+                    'status' => 0,
+                    'message' => 'Product not found'
+                ], 404);
+            }
+
+            $product->update($request->all());
+
+            return response()->json([
+                'status' => 1,
+                'message' => 'Product updated successfully',
+                'data' => ['product' => $product]
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error updating product: ' . $e->getMessage());
+            return response()->json([
+                'status' => 0,
+                'message' => 'Failed to update product'
+            ], 500);
+        }
     }
 
     /**
@@ -66,6 +133,38 @@ class ProductController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        try {
+            if (!Gate::allows('checkAdmin')) {
+                return response()->json([
+                    'status' => 0,
+                    'message' => 'Unauthorized to delete product'
+                ], 403);
+            }
+
+            $product = Product::find($id);
+
+            if (!$product) {
+                return response()->json([
+                    'status' => 0,
+                    'message' => 'Product not found'
+                ], 404);
+            }
+
+            $product->update([
+                'deleted_at' => now()
+            ]);
+
+            return response()->json([
+                'status' => 1,
+                'message' => 'Product deleted successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error deleting product: ' . $e->getMessage());
+            return response()->json([
+                'status' => 0,
+                'message' => 'Failed to delete product'
+            ], 500);
+        }
     }
 }
