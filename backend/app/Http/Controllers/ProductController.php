@@ -38,6 +38,13 @@ class ProductController extends Controller
      */
     public function store(Request $request)
     {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'price' => 'required|numeric|min:0',
+            'stock_quantity' => 'required|integer|min:0',
+            'image' => 'nullable|image|max:2048',
+        ]);
+
         try {
             if (!Gate::allows('checkAdmin')) {
                 return response()->json([
@@ -47,12 +54,12 @@ class ProductController extends Controller
             }
 
             $product = Product::create($request->all());
-            
-            if ($request->has('image')) {
+
+            if ($request->hasFile('image')) {
                 $imagePath = $request->file('image')->store('products', 'public');
                 $request->merge(['image' => $imagePath]);
             }
-            
+
             return response()->json([
                 'status' => 1,
                 'message' => 'Product created successfully',
@@ -100,6 +107,13 @@ class ProductController extends Controller
      */
     public function update(Request $request, string $id)
     {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'price' => 'required|numeric|min:0',
+            'stock_quantity' => 'required|integer|min:0',
+            'image' => 'nullable|image|max:2048',
+        ]);
+
         try {
             if (!Gate::allows('checkAdmin')) {
                 return response()->json([
@@ -117,7 +131,20 @@ class ProductController extends Controller
                 ], 404);
             }
 
-            $product->update($request->all());
+            if ($request->hasFile('image')) {
+                if ($product->image && \Storage::disk('public')->exists($product->image)) {
+                    \Storage::disk('public')->delete($product->image);
+                }
+                $imagePath = $request->file('image')->store('products', 'public');
+                $request->merge(['image' => $imagePath]);
+            }
+
+            $product->update(([
+                'name' => $request->name,
+                'price' => $request->price,
+                'stock_quantity' => $request->stock_quantity,
+                'image' => $request->image ?? $product->image,
+            ]));
 
             return response()->json([
                 'status' => 1,

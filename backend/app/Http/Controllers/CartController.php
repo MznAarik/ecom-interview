@@ -6,6 +6,7 @@ use App\Http\Requests\CartValidation;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Product;
+use App\Services\CartService;
 use \Illuminate\Support\Facades\Gate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -13,6 +14,11 @@ use Illuminate\Support\Facades\DB;
 
 class CartController extends Controller
 {
+
+    // public function __construct(
+    //     protected CartService $cartService
+    // ) {}
+
     public function addToCart(CartValidation $request)
     {
         try {
@@ -164,7 +170,7 @@ class CartController extends Controller
                         ], 404);
                     }
 
-                    $product = Product::find($item['product_id']);
+                    $product = Product::lockForUpdate()->find($item['product_id']);
                     if (!$product) {
                         return response()->json([
                             'status' => 0,
@@ -234,6 +240,7 @@ class CartController extends Controller
 
                 $cartItem = CartItem::where('cart_id', $cart->id)
                     ->where('product_id', $item['product_id'])
+                    ->lockForUpdate()
                     ->first();
 
                 if (!$cartItem) {
@@ -269,7 +276,7 @@ class CartController extends Controller
 
     public function checkout(Request $request)
     {
-        try{
+        try {
 
             $userId = Auth::id();
             $cart = Cart::where('user_id', $userId)
